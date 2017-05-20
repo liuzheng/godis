@@ -1,0 +1,10 @@
+hash: 1a23cb3bde1bdcb4e7e7fed71ce5e141d8667905fbec3b87a719bb0a61f1b9c2
+updated: 2017-05-20T20:26:06.69288408+08:00
+imports:
+- name: github.com/liuzheng712/godis
+  version: b9f99f3cbce7e1901089d249712cead150d58ae4
+  subpackages:
+  - logger
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
+devImports: []

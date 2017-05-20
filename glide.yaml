@@ -1,0 +1,6 @@
+package: .
+import:
+- package: github.com/liuzheng712/godis
+  subpackages:
+  - logger
+- package: github.com/op/go-logging
