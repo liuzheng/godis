@@ -38,7 +38,7 @@ func Logs(logpath string) (*logging.Logger, error) {
 
 	}
 
-	f, err := os.OpenFile(logpath, os.O_WRONLY | os.O_CREATE, 0644)
+	f, err := os.OpenFile(logpath, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
