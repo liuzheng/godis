@@ -22,18 +22,38 @@ const (
 var (
 	host = flag.String("h", "127.0.0.1", "run host")
 	port = flag.String("p", "6379", "listen port")
+	mode = flag.String("m", "standalone", "standalone/cluster ")
 	printVersion = flag.Bool("version", false, "Print the version and exit")
 	GracefulExit = errors.New("graceful exit")
 	EOF = []byte{byte(26)}
 	ESC = []byte{byte(27)}
 	errEOF = errors.New("EOF")
 	err error
+
+	ascii_logo = "\n                _._                                                  \n" +
+		"           _.-``__ ''-._                                             \n" +
+		"      _.-``    `.  `_.  ''-._           Godis %s ( %s %s ) \n" +
+		"  .-`` .-```.  ```\\/    _.,_ ''-._                                   \n" +
+		" (    '      ,       .-`  | `,    )     Running in %s mode\n" +
+		" |`-._`-...-` __...-.``-._|'` _.-'|     Port: %s\n" +
+		" |    `-._   `._    /     _.-'    |     PID: %v\n" +
+		"  `-._    `-._  `-./  _.-'    _.-'                                   \n" +
+		" |`-._`-._    `-.__.-'    _.-'_.-'|                                  \n" +
+		" |    `-._`-._        _.-'_.-'    |           http://godis.io        \n" +
+		"  `-._    `-._`-.__.-'_.-'    _.-'                                   \n" +
+		" |`-._`-._    `-.__.-'    _.-'_.-'|                                  \n" +
+		" |    `-._`-._        _.-'_.-'    |                                  \n" +
+		"  `-._    `-._`-.__.-'_.-'    _.-'                                   \n" +
+		"      `-._    `-.__.-'    _.-'                                       \n" +
+		"          `-._        _.-'                                           \n" +
+		"              `-.__.-'                                               \n\n";
 )
 
 type Redis struct {
 	log  *logging.Logger
 	host string
 	port string
+	mode string
 }
 
 func handler() error {
@@ -55,7 +75,7 @@ func New() (*Redis, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Redis{log:log, host: *host, port: *port}, nil
+	return &Redis{log:log, host: *host, port: *port,mode:*mode}, nil
 }
 func (g *Redis)Run() {
 	var l net.Listener
@@ -65,7 +85,7 @@ func (g *Redis)Run() {
 		os.Exit(1)
 	}
 	defer l.Close()
-	g.log.Info("Listening on", g.host + ":" + g.port)
+	g.log.Infof(ascii_logo, version, runtime.Version(), runtime.GOARCH, g.mode, g.port, os.Getppid())
 	for {
 		conn, err := l.Accept()
 		if err != nil {
