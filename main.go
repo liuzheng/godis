@@ -14,7 +14,7 @@ import (
 const (
 	version = "0.1"
 	ESC = []byte{byte(27)}
-	project_name = "gedis"
+	project_name = "godis"
 )
 
 var (
