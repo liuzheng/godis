@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"github.com/liuzheng712/godis/logger"
 	"fmt"
+	"io"
 )
 
 var log = logger.Logs()
@@ -24,7 +25,9 @@ var (
 	port = flag.String("p", "6379", "listen port")
 	printVersion = flag.Bool("version", false, "Print the version and exit")
 	GracefulExit = errors.New("graceful exit")
+	EOF = []byte{byte(26)}
 	ESC = []byte{byte(27)}
+	errEOF = errors.New("EOF")
 )
 
 func handler() error {
@@ -57,7 +60,7 @@ func main() {
 			os.Exit(1)
 		}
 		//logs an incoming message
-		log.Infof("Received message %s -> %s \n", conn.RemoteAddr(), conn.LocalAddr())
+		log.Infof("Start to receive message %s -> %s \n", conn.RemoteAddr(), conn.LocalAddr())
 
 		// Handle connections in a new goroutine.
 		receive := make(chan []byte)
@@ -68,15 +71,19 @@ func main() {
 }
 
 func handleWrite(conn net.Conn, receive chan []byte) {
+	writeFor:
 	for {
 		select {
 		case rec := <-receive:
 
-			if rec[0] == 27 {
+			if rec[0] == ESC[0] {
 				_, e := conn.Write([]byte("$-1\r\n"))
 				if e != nil {
 					log.Error("Error to send message because of ", e.Error())
 				}
+			} else if rec[0] == EOF[0] {
+				//log.Info("Close the write in ", conn.RemoteAddr())
+				break writeFor
 			} else {
 				log.Debug(string(rec))
 			}
@@ -85,11 +92,22 @@ func handleWrite(conn net.Conn, receive chan []byte) {
 	}
 }
 func handleRead(conn net.Conn, receive chan []byte) {
+	defer func() {
+		log.Info("Close the connection in ", conn.RemoteAddr())
+		conn.Close()
+	}()
+	readFor:
 	for {
 		reader := bufio.NewReader(conn)
 		message, _, err := reader.ReadLine()
 		if err != nil {
+			if err == io.EOF {
+				//log.Info("Close the read in ", conn.RemoteAddr())
+				receive <- EOF
+				break readFor
+			}
 			log.Error(err)
+
 			return
 		}
 		i, err := strconv.Atoi(string(message[1:]))
@@ -108,6 +126,5 @@ func handleRead(conn net.Conn, receive chan []byte) {
 		// ESC
 		receive <- ESC
 	}
-
 }
 
