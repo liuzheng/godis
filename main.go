@@ -11,9 +11,10 @@ import (
 	"github.com/liuzheng712/godis/logger"
 	"fmt"
 	"io"
+	"github.com/op/go-logging"
 )
 
-var log = logger.Logs()
+var log *logging.Logger
 
 const (
 	version = "0.1"
@@ -45,6 +46,12 @@ func main() {
 	if err == GracefulExit {
 		os.Exit(0)
 	}
+	log, err = logger.Logs("/tmp/godis.log")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	var l net.Listener
 	l, err = net.Listen("tcp", *host + ":" + *port)
 	if err != nil {
