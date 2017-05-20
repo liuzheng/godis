@@ -30,7 +30,8 @@ var (
 	errEOF = errors.New("EOF")
 	err error
 
-	ascii_logo = "\n                _._                                                  \n" +
+	ascii_logo = "\n" +
+		"                _._                                                  \n" +
 		"           _.-``__ ''-._                                             \n" +
 		"      _.-``    `.  `_.  ''-._           Godis %s ( %s %s ) \n" +
 		"  .-`` .-```.  ```\\/    _.,_ ''-._                                   \n" +
@@ -75,7 +76,7 @@ func New() (*Redis, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Redis{log:log, host: *host, port: *port,mode:*mode}, nil
+	return &Redis{log:log, host: *host, port: *port, mode:*mode}, nil
 }
 func (g *Redis)Run() {
 	var l net.Listener
