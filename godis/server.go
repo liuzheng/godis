@@ -109,7 +109,19 @@ func (g *Redis) handleWrite(conn net.Conn, receive chan [][]byte) {
 	for {
 		holeCMD := <-receive
 		g.log.Debug(holeCMD)
-		_, _ = conn.Write([]byte("$-1\r\n"))
+		if len(holeCMD) < 2 {
+			continue
+		}
+		if fun, ok := COMMANDS[strings.ToUpper(string(holeCMD[1]))]; ok {
+			conn.Write(fun(holeCMD))
+		} else {
+			switch holeCMD[0][0] {
+			case 1:
+				conn.Write([]byte("$-1\r\n"))
+			case 2:
+				conn.Write([]byte(""))
+			}
+		}
 
 	}
 	//cmd := make(chan []byte)
@@ -141,16 +153,17 @@ func (g *Redis)handleRead(conn net.Conn, receive chan [][]byte) {
 		g.log.Info("Close the connection in ", conn.RemoteAddr())
 		conn.Close()
 	}()
-	onebyte := make([]byte, 1)
-	twobyte := make([]byte, 2)
 	readFor:
 	for {
+		onebyte := make([]byte, 1)
+		twobyte := make([]byte, 2)
 		holeCMD := [][]byte{}
 		_, err = conn.Read(onebyte)
 		if err == io.EOF {
 			break readFor
 		}
 		if onebyte[0] == 42 {
+			holeCMD = append(holeCMD, []byte{1})
 			// *
 			var lens bytes.Buffer
 			for {
@@ -163,13 +176,13 @@ func (g *Redis)handleRead(conn net.Conn, receive chan [][]byte) {
 				lens.Write(onebyte)
 			}
 			conn.Read(onebyte)
-			g.log.Debug(lens.String())
+			//g.log.Debug(lens.String())
 			i, err := strconv.Atoi(lens.String())
 			if err != nil {
 				g.log.Error(err)
 				return
 			}
-			g.log.Debug(i)
+			//g.log.Debug(i)
 			for j := 0; j < i; j++ {
 				_, _ = conn.Read(onebyte)
 				if onebyte[0] == 36 {
@@ -189,19 +202,41 @@ func (g *Redis)handleRead(conn net.Conn, receive chan [][]byte) {
 						g.log.Error(err)
 						return
 					}
-					g.log.Debug(cmdLen)
+					//g.log.Debug(cmdLen)
 					cmd := make([]byte, cmdLen)
 					_, err = conn.Read(cmd)
-					g.log.Debug(cmd)
+					//g.log.Debug(cmd)
 					holeCMD = append(holeCMD, []byte(cmd))
-					g.log.Debug(holeCMD)
+					//g.log.Debug(holeCMD)
 					conn.Read(twobyte)
 				}
 			}
 
+		} else if onebyte[0] == 13 || onebyte[0] == 10 {
+			continue
+		} else {
+			var cmd bytes.Buffer
+			cmd.Write(onebyte)
+			holeCMD = append(holeCMD, []byte{2})
+			// TODO: split command with spaces(To: liuzheng712@gmail.com)
+			for {
+				_, err = conn.Read(onebyte)
+				if err == io.EOF {
+					break readFor
+				}
+				if onebyte[0] == 13 {
+					conn.Read(onebyte)
+					break
+				} else if onebyte[0] > 20 {
+					cmd.Write(onebyte)
+				}
+
+			}
+			holeCMD = append(holeCMD, cmd.Bytes())
+
 		}
 		receive <- holeCMD
-		g.log.Debug("holeCMD", holeCMD)
+		//g.log.Debug("holeCMD", holeCMD)
 	}
 	//readFor:
 	//for {
@@ -234,25 +269,25 @@ func (g *Redis)handleRead(conn net.Conn, receive chan [][]byte) {
 	//	receive <- ESC
 	//}
 }
-func (g *Redis)analizeCommand(cmd, cmdresult chan []byte) {
-	analizeFor:
-	for {
-		select {
-		case rec := <-cmd:
-			if rec[0] == ESC[0] {
-				cmdresult <- []byte("$-1\r\n")
-			} else if rec[0] == EOF[0] {
-				//log.Info("Close the write in ", conn.RemoteAddr())
-				break analizeFor
-			} else {
-				if fun, ok := COMMANDS[strings.ToUpper(string(rec))]; ok {
-					ss := fun()
-					g.log.Debug(ss)
-
-					//cmdresult <- ss
-				}
-			}
-		}
-
-	}
-}
+//func (g *Redis)analizeCommand(cmd, cmdresult chan []byte) {
+//	analizeFor:
+//	for {
+//		select {
+//		case rec := <-cmd:
+//			if rec[0] == ESC[0] {
+//				cmdresult <- []byte("$-1\r\n")
+//			} else if rec[0] == EOF[0] {
+//				//log.Info("Close the write in ", conn.RemoteAddr())
+//				break analizeFor
+//			} else {
+//				if fun, ok := COMMANDS[strings.ToUpper(string(rec))]; ok {
+//					ss := fun()
+//					g.log.Debug(ss)
+//
+//					//cmdresult <- ss
+//				}
+//			}
+//		}
+//
+//	}
+//}
