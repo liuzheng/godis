@@ -1,0 +1,12 @@
+{
+  "gitbook": "3.2.2",
+  "plugins": [
+    "github",
+    "yahei"
+  ],
+  "pluginsConfig": {
+    "github":{
+      "url": "https://github.com/liuzheng712/godis"
+    }
+  }
+}
