@@ -1,7 +1,3 @@
-package: .
+package: github.com/liuzheng712/godis
 import:
-- package: github.com/liuzheng712/godis
-  version: master
-  subpackages:
-  - logger
 - package: github.com/op/go-logging
