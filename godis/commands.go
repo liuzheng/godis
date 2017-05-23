@@ -115,10 +115,10 @@ func LRANGE(holeCMD [][]byte) []byte {
         if err != nil {
             return []byte("-ERR value is not an integer or out of range\r\n")
         }
-        if stop > start {
+        if stop < start {
             return []byte("*0\r\n")
         }
-
+fmt.Println(start,stop)
         if q, ok := memDB[db][string(key)]; ok {
             if q.(*Queue).T != "list" {
                 return []byte("-ERR key type\r\n")
