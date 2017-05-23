@@ -83,14 +83,12 @@ func LPUSH(holeCMD [][]byte) []byte {
             if q.(*Queue).T != "list" {
                 return []byte("-ERR key type\r\n")
             } else {
-                q.(*Queue).ListLpush(value)
-                return []byte(ok_msg1)
+                return []byte(":" + strconv.Itoa(q.(*Queue).ListLpush(value)) + "\r\n")
             }
         } else {
             q := NewQueue(string(key), 0)
             memDB[db][string(key)] = q
-
-            return []byte(":" + string(q.ListLpush(value)))
+            return []byte(":" + strconv.Itoa(q.ListLpush(value)) + "\r\n")
         }
 
     } else {
@@ -117,15 +115,16 @@ func LRANGE(holeCMD [][]byte) []byte {
         if err != nil {
             return []byte("-ERR value is not an integer or out of range\r\n")
         }
-        if stop > start {
+        if stop < start {
             return []byte("*0\r\n")
         }
-
+fmt.Println(start,stop)
         if q, ok := memDB[db][string(key)]; ok {
             if q.(*Queue).T != "list" {
                 return []byte("-ERR key type\r\n")
             } else {
                 q.(*Queue).ListLrange(start, stop)
+                fmt.Println(q)
                 return []byte(ok_msg1)
             }
         } else {
