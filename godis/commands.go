@@ -12,6 +12,8 @@ var (
         "INFO":INFO,
         "SET":SET,
         "GET":GET,
+        "LPUSH":LPUSH,
+        "LRANGE":LRANGE,
     }
 )
 
@@ -40,12 +42,7 @@ func SET(holeCMD [][]byte) []byte {
         value := holeCMD[3]
         fmt.Println(value)
 
-        switch holeCMD[0][0] {
-        case 1:
-            return []byte("+OK\r\n")
-        case 2:
-            return []byte("+OK\r\n")
-        }
+        return []byte(ok_msg1)
     } else {
         return []byte("-ERR command, your command not SET\r\n")
     }
@@ -68,6 +65,75 @@ func GET(holeCMD [][]byte) []byte {
         }
     } else {
         return []byte("-ERR command, your command not GET\r\n")
+    }
+    return nil
+}
+
+var db = 0
+
+func LPUSH(holeCMD [][]byte) []byte {
+    err_msg := "-ERR wrong number of arguments for 'lpush' command\r\n"
+    if strings.ToUpper(string(holeCMD[1])) == "LPUSH" {
+        if len(holeCMD) != 4 {
+            return []byte(err_msg)
+        }
+        key := holeCMD[2]
+        value := holeCMD[3]
+        if q, ok := memDB[db][string(key)]; ok {
+            if q.(*Queue).T != "list" {
+                return []byte("-ERR key type\r\n")
+            } else {
+                q.(*Queue).ListLpush(value)
+                return []byte(ok_msg1)
+            }
+        } else {
+            q := NewQueue(string(key), 0)
+            memDB[db][string(key)] = q
+
+            return []byte(":" + string(q.ListLpush(value)))
+        }
+
+    } else {
+        return []byte("-ERR command, your command not LPUSH\r\n")
+    }
+    return nil
+}
+func LRANGE(holeCMD [][]byte) []byte {
+    err_msg := "-ERR wrong number of arguments for 'lpush' command\r\n"
+    if strings.ToUpper(string(holeCMD[1])) == "LRANGE" {
+        if len(holeCMD) != 5 {
+            return []byte(err_msg)
+        }
+        key := holeCMD[2]
+        start, err := strconv.Atoi(string(holeCMD[3]))
+        if err != nil {
+            return []byte("-ERR value is not an integer or out of range\r\n")
+        }
+        if start < 0 {
+            return []byte("*0\r\n")
+        }
+
+        stop, err := strconv.Atoi(string(holeCMD[4]))
+        if err != nil {
+            return []byte("-ERR value is not an integer or out of range\r\n")
+        }
+        if stop > start {
+            return []byte("*0\r\n")
+        }
+
+        if q, ok := memDB[db][string(key)]; ok {
+            if q.(*Queue).T != "list" {
+                return []byte("-ERR key type\r\n")
+            } else {
+                q.(*Queue).ListLrange(start, stop)
+                return []byte(ok_msg1)
+            }
+        } else {
+            return []byte("*0\r\n")
+        }
+
+    } else {
+        return []byte("-ERR command, your command not LRANGE\r\n")
     }
     return nil
 }

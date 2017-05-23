@@ -20,6 +20,8 @@ import (
 const (
     version = "0.1"
     project_name = "godis"
+    ok_msg1 = "+OK\r\n"
+    ok_msg2 = "+OK\r\n"
 )
 
 var (
@@ -291,3 +293,5 @@ func (g *Redis)handleRead(conn net.Conn, receive chan [][]byte) {
 //
 //	}
 //}
+
+var memDB = map[int]map[string]interface{}{0:map[string]interface{}{}}
