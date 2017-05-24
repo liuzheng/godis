@@ -97,7 +97,7 @@ func LPUSH(holeCMD [][]byte) []byte {
     return nil
 }
 func LRANGE(holeCMD [][]byte) []byte {
-    err_msg := "-ERR wrong number of arguments for 'lpush' command\r\n"
+    err_msg := "-ERR wrong number of arguments for 'lrange' command\r\n"
     if strings.ToUpper(string(holeCMD[1])) == "LRANGE" {
         if len(holeCMD) != 5 {
             return []byte(err_msg)

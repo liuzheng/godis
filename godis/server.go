@@ -77,10 +77,11 @@ func New() (*Redis, error) {
     if err == GracefulExit {
         os.Exit(0)
     }
-    log, err := logger.Logs("/tmp/godis.log")
+    log, err := logger.Logs("/tmp/godis.log", "DEBUG", "INFO")
     if err != nil {
         return nil, err
     }
+
     return &Redis{log:log, host: *host, port: *port, mode:*mode}, nil
 }
 func (g *Redis)Run() {

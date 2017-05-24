@@ -25,7 +25,7 @@ func (p Password) Redacted() interface{} {
     return logging.Redact(string(p))
 }
 
-func Logs(logpath string) (*logging.Logger, error) {
+func Logs(logpath, frontend, backend string) (*logging.Logger, error) {
     if _, err := os.Stat(logpath); os.IsNotExist(err) {
         // path/to/whatever does not exist
         filePathDir := filepath.Dir(logpath)
@@ -44,23 +44,28 @@ func Logs(logpath string) (*logging.Logger, error) {
     }
 
     // For demo purposes, create two backend for os.Stderr.
-    backend1 := logging.NewLogBackend(f, "", 0)
-    backend2 := logging.NewLogBackend(os.Stderr, "", 0)
+    Backend := logging.NewLogBackend(f, "", 0)
+    Frontend := logging.NewLogBackend(os.Stderr, "", 0)
 
     // For messages written to backend2 we want to add some additional
     // information to the output, including the used log level and the name of
     // the function.
-    backend2Formatter := logging.NewBackendFormatter(backend2, format)
+    FrontendFormatter := logging.NewBackendFormatter(Frontend, format)
+    FrontendLeveled := logging.AddModuleLevel(FrontendFormatter)
+    level, _ := logging.LogLevel(frontend)
+    FrontendLeveled.SetLevel(level, "")
+
 
     // Only errors and more severe messages should be sent to backend1
-    backend1Formatter := logging.NewBackendFormatter(backend1, format1)
-    backend1Leveled := logging.AddModuleLevel(backend1Formatter)
-    backend1Leveled.SetLevel(logging.INFO, "")
+    BackendFormatter := logging.NewBackendFormatter(Backend, format1)
+    BackendLeveled := logging.AddModuleLevel(BackendFormatter)
+    level, _ = logging.LogLevel(backend)
+    BackendLeveled.SetLevel(level, "")
 
 
 
-    // Set the backends to be used.
-    logging.SetBackend(backend1Leveled, backend2Formatter)
+    // Set the Backends to be used.
+    logging.SetBackend(BackendLeveled, FrontendLeveled)
     //Log.Notice("Start logging...")
     return Log, nil
 }
