@@ -8,15 +8,10 @@ import (
 
 var (
     COMMANDS = map[string]func([][]byte) []byte{
-        "SET":SET,
-        "GET":GET,
-        //"LPUSH":LPUSH,
-        //"LRANGE":LRANGE,
-        //"BGSAVE":BGSAVE,
-    }
-    ONECOMMANDS = map[string]func([][]byte) []byte{
         "COMMAND":COMMAND,
         "INFO":INFO,
+        "SET":SET,
+        "GET":GET,
         //"LPUSH":LPUSH,
         //"LRANGE":LRANGE,
         //"BGSAVE":BGSAVE,
@@ -52,11 +47,16 @@ func SET(holeCMD [][]byte) []byte {
         if len(holeCMD) != 4 {
             return []byte(err_msg)
         }
-        key := holeCMD[2]
-        fmt.Println(key)
-        value := holeCMD[3]
-        fmt.Println(value)
-
+        //key := holeCMD[2]
+        //fmt.Println(key)
+        //value := holeCMD[3]
+        //fmt.Println(value)
+        //if ch, ok := memDB[db][key]; ok {
+        //    ch <-
+        //} else {
+        //    memDB[db][key] = make(chan MSG)
+        //
+        //}
         return []byte(ok_msg1)
     } else {
         return []byte("-ERR command, your command not SET\r\n")

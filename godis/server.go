@@ -37,6 +37,7 @@ var (
     host = flag.String("h", "127.0.0.1", "run host")
     port = flag.String("p", "6379", "listen port")
     mode = flag.String("m", "standalone", "standalone/cluster ")
+    debug = flag.Bool("debug", false, "default debug is off ")
     printVersion = flag.Bool("version", false, "Print the version and exit")
     GracefulExit = errors.New("graceful exit")
     EOF = []byte{byte(26)}
@@ -86,7 +87,13 @@ func New() (*Redis, error) {
     if err == GracefulExit {
         os.Exit(0)
     }
-    log, err := logger.Logs("/tmp/godis.log", "DEBUG", "ERROR")
+    var log *logging.Logger
+    if *debug {
+        log, err = logger.Logs("/tmp/godis.log", "DEBUG", "DEBUG")
+    } else {
+        log, err = logger.Logs("/tmp/godis.log", "ERROR", "ERROR")
+    }
+
     if err != nil {
         return nil, err
     }
@@ -126,6 +133,10 @@ func (g *Redis)Run() {
         receive := make(chan [][]byte)
         go g.handleWrite(conn, receive)
         go g.handleRead(conn, receive)
+        defer func() {
+            g.log.Info("Close the connection in ", conn.RemoteAddr())
+            conn.Close()
+        }()
     }
     //defer func() {
     //    l.Close()
@@ -137,40 +148,42 @@ func (g *Redis)Run() {
 func (g *Redis) handleWrite(conn net.Conn, receive chan [][]byte) {
     for {
         holeCMD := <-receive
+        g.log.Debug(holeCMD)
         g.log.Debug(holeCMD[0], string(holeCMD[1]))
         l := len(holeCMD)
         switch  {
         case l < 2:
             continue
-        case l == 2:
-            if fun, ok := ONECOMMANDS[strings.ToUpper(string(holeCMD[1]))]; ok {
+        default:
+            if fun, ok := COMMANDS[strings.ToUpper(string(holeCMD[1]))]; ok {
                 conn.Write(fun(holeCMD))
             } else {
                 conn.Write([]byte("-ERR unknown command '"))
                 conn.Write(holeCMD[1])
                 conn.Write([]byte("'\r\n"))
             }
-        default:
-            if fun, ok := COMMANDS[strings.ToUpper(string(holeCMD[1]))]; ok {
-                g.log.Debug(memDB[0])
-                if chMSG, ok := memDB[db][string(holeCMD[2])]; ok {
-                    c := make(chan []byte)
-                    chMSG <- MSG{&holeCMD, fun, &c}
-                    conn.Write(<-c)
-                } else {
-                    memDB[db][string(holeCMD[2])] = make(chan MSG)
-                    c := make(chan []byte)
-                    memDB[db][string(holeCMD[2])] <- MSG{&holeCMD, fun, &c}
-                    conn.Write(<-c)
-                }
-            } else {
-                switch holeCMD[0][0] {
-                case 1:
-                    conn.Write([]byte("$-1\r\n"))
-                case 2:
-                    conn.Write([]byte(""))
-                }
-            }
+        //default:
+        //
+        //    if fun, ok := COMMANDS[strings.ToUpper(string(holeCMD[1]))]; ok {
+        //        g.log.Debug(memDB[0])
+        //        if chMSG, ok := memDB[db][string(holeCMD[2])]; ok {
+        //            c := make(chan []byte)
+        //            chMSG <- MSG{&holeCMD, fun, &c}
+        //            conn.Write(<-c)
+        //        } else {
+        //            memDB[db][string(holeCMD[2])] = make(chan MSG)
+        //            c := make(chan []byte)
+        //            memDB[db][string(holeCMD[2])] <- MSG{&holeCMD, fun, &c}
+        //            conn.Write(<-c)
+        //        }
+        //    } else {
+        //        switch holeCMD[0][0] {
+        //        case 1:
+        //            conn.Write([]byte("$-1\r\n"))
+        //        case 2:
+        //            conn.Write([]byte(""))
+        //        }
+        //    }
         }
 
     }
@@ -199,10 +212,7 @@ func (g *Redis) handleWrite(conn net.Conn, receive chan [][]byte) {
     //}
 }
 func (g *Redis)handleRead(conn net.Conn, receive chan [][]byte) {
-    defer func() {
-        g.log.Info("Close the connection in ", conn.RemoteAddr())
-        conn.Close()
-    }()
+
     readFor:
     for {
         onebyte := make([]byte, 1)
